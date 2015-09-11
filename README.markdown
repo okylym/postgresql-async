@@ -17,6 +17,7 @@
 		- [Prepared statements](#prepared-statements)
 	- [Transactions](#transactions)
 	- [Example usage (for PostgreSQL, but it looks almost the same on MySQL)](#example-usage-for-postgresql-but-it-looks-almost-the-same-on-mysql)
+	- [LISTEN/NOTIFY support (PostgreSQL only)](#listennotify-support-postgresql-only)
 	- [Contributing](#contributing)
 	- [Licence](#licence)
 
@@ -45,13 +46,15 @@ You can view the project's [CHANGELOG here](CHANGELOG.md).
  driver allowing you to write less SQL and make use of a nice high level database access API;
 * [mod-mysql-postgresql](https://github.com/vert-x/mod-mysql-postgresql) - [vert.x](http://vertx.io/) module that integrates
  the driver into a vert.x application;
+* [dbmapper](https://github.com/njeuk/dbmapper) - enables SQL queries with automatic mapping from the database table to the Scala 
+ class and a mechanism to create a Table Date Gateway model with very little boiler plate code;
 
 ## Include them as dependencies
 
 And if you're in a hurry, you can include them in your build like this, if you're using PostgreSQL:
 
 ```scala
-"com.github.mauricio" %% "postgresql-async" % "0.2.14"
+"com.github.mauricio" %% "postgresql-async" % "0.2.18"
 ```
 
 Or Maven:
@@ -60,14 +63,14 @@ Or Maven:
 <dependency>
   <groupId>com.github.mauricio</groupId>
   <artifactId>postgresql-async_2.11</artifactId>
-  <version>0.2.14</version>
+  <version>0.2.18</version>
 </dependency>
 ```
 
 And if you're into MySQL:
 
 ```scala
-"com.github.mauricio" %% "mysql-async" % "0.2.14"
+"com.github.mauricio" %% "mysql-async" % "0.2.18"
 ```
 
 Or Maven:
@@ -76,7 +79,7 @@ Or Maven:
 <dependency>
   <groupId>com.github.mauricio</groupId>
   <artifactId>mysql-async_2.11</artifactId>
-  <version>0.2.14</version>
+  <version>0.2.18</version>
 </dependency>
 ```
 
@@ -266,6 +269,21 @@ disconnect and the connection is closed.
 
 You can also use the `ConnectionPool` provided by the driver to simplify working with database connections in your app.
 Check the blog post above for more details and the project's ScalaDocs.
+
+## LISTEN/NOTIFY support (PostgreSQL only)
+
+LISTEN/NOTIFY is a PostgreSQL-specific feature for database-wide publish-subscribe scenarios. You can listen to database
+notifications as such:
+
+```scala
+  val connection: Connection = ...
+
+  connection.sendQuery("LISTEN my_channel")
+  connection.registerNotifyListener {
+    message =>
+    println(s"channel: ${message.channel}, payload: ${message.payload}")
+  }
+```
 
 ## Contributing
 

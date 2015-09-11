@@ -14,20 +14,19 @@
  * under the License.
  */
 
-package com.github.mauricio.async.db.mysql.message.client
+package com.github.mauricio.async.db.pool
 
-import com.github.mauricio.async.db.KindedMessage
+import java.util.concurrent.atomic.AtomicInteger
+import com.github.mauricio.async.db.util.{NettyUtils, ExecutorServiceUtils}
+import io.netty.channel.EventLoopGroup
 
-object ClientMessage {
-
-  final val ClientProtocolVersion = 0x09 // COM_STATISTICS
-  final val Quit = 0x01 // COM_QUIT
-  final val Query = 0x03 // COM_QUERY
-  final val PreparedStatementPrepare = 0x16 // COM_STMT_PREPARE
-  final val PreparedStatementExecute = 0x17 // COM_STMT_EXECUTE
-  final val PreparedStatementSendLongData = 0x18 // COM_STMT_SEND_LONG_DATA
-  final val AuthSwitchResponse = 0xfe // AuthSwitchRequest
-
+/**
+ * Implementation of TimeoutScheduler used for testing
+ */
+class DummyTimeoutScheduler extends TimeoutScheduler {
+  implicit val internalPool = ExecutorServiceUtils.CachedExecutionContext
+  private val timeOuts = new AtomicInteger
+  override def onTimeout = timeOuts.incrementAndGet
+  def timeoutCount = timeOuts.get()
+  def eventLoopGroup : EventLoopGroup = NettyUtils.DefaultEventLoopGroup
 }
-
-class ClientMessage ( val kind : Int ) extends KindedMessage

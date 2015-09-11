@@ -14,20 +14,22 @@
  * under the License.
  */
 
-package com.github.mauricio.postgresql
+package com.github.mauricio.async.db.postgresql
 
-import com.github.mauricio.async.db.column.{TimestampEncoderDecoder, TimeEncoderDecoder, DateEncoderDecoder}
+import java.nio.ByteBuffer
+
+import com.github.mauricio.async.db.column.{DateEncoderDecoder, TimeEncoderDecoder, TimestampEncoderDecoder}
 import com.github.mauricio.async.db.exceptions.UnsupportedAuthenticationMethodException
-import com.github.mauricio.async.db.postgresql.exceptions.{QueryMustNotBeNullOrEmptyException, GenericDatabaseException}
+import com.github.mauricio.async.db.postgresql.exceptions.{GenericDatabaseException, QueryMustNotBeNullOrEmptyException}
 import com.github.mauricio.async.db.postgresql.messages.backend.InformationMessage
-import com.github.mauricio.async.db.postgresql.{PostgreSQLConnection, DatabaseTestHelper}
 import com.github.mauricio.async.db.util.Log
-import com.github.mauricio.async.db.{Configuration, QueryResult, Connection}
-import concurrent.{Future, Await}
-import org.specs2.mutable.Specification
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
+import com.github.mauricio.async.db.{Configuration, Connection, QueryResult}
+import io.netty.buffer.Unpooled
 import org.joda.time.LocalDateTime
+import org.specs2.mutable.Specification
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 object PostgreSQLConnectionSpec {
   val log = Log.get[PostgreSQLConnectionSpec]
@@ -282,16 +284,12 @@ class PostgreSQLConnectionSpec extends Specification with DatabaseTestHelper {
       try {
         withHandler(configuration, {
           handler =>
-            executeQuery(handler, "SELECT 0")
-            throw new IllegalStateException("should not have come here")
+            val result = executeQuery(handler, "SELECT 0")
+            throw new IllegalStateException("should not have arrived")
         })
       } catch {
-        case e: GenericDatabaseException => {
+        case e: GenericDatabaseException =>
           e.errorMessage.fields(InformationMessage.Routine) === "auth_failed"
-        }
-        case e: Exception => {
-          throw new IllegalStateException("should not have come here")
-        }
       }
 
     }
@@ -406,10 +404,14 @@ class PostgreSQLConnectionSpec extends Specification with DatabaseTestHelper {
           executeDdl(handler, create)
           log.debug("executed create")
           executePreparedStatement(handler, insert, Array( sampleArray ))
+          executePreparedStatement(handler, insert, Array( ByteBuffer.wrap(sampleArray) ))
+          executePreparedStatement(handler, insert, Array( Unpooled.copiedBuffer(sampleArray) ))
           log.debug("executed prepared statement")
           val rows = executeQuery(handler, select).rows.get
 
           rows(0)("content").asInstanceOf[Array[Byte]] === sampleArray
+          rows(1)("content").asInstanceOf[Array[Byte]] === sampleArray
+          rows(2)("content").asInstanceOf[Array[Byte]] === sampleArray
       }
 
     }
@@ -424,6 +426,20 @@ class PostgreSQLConnectionSpec extends Specification with DatabaseTestHelper {
           val result = executePreparedStatement(handler, "SELECT t FROM test")
           val date2 = result.rows.get.head(0)
           date1 === date2
+      }
+
+    }
+
+    "insert without return after select" in {
+
+      withHandler {
+        handler =>
+          executeDdl(handler, this.preparedStatementCreate)
+          executeDdl(handler, this.preparedStatementInsert, 1)
+          executeDdl(handler, this.preparedStatementSelect, 1)
+          val result = executeQuery(handler, this.preparedStatementInsert2)
+
+          result.rows === None
       }
 
     }

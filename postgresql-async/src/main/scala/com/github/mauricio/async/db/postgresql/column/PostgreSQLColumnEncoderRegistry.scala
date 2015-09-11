@@ -16,7 +16,10 @@
 
 package com.github.mauricio.async.db.postgresql.column
 
+import java.nio.ByteBuffer
+
 import com.github.mauricio.async.db.column._
+import io.netty.buffer.ByteBuf
 import org.joda.time._
 
 import scala.collection.JavaConversions._
@@ -49,6 +52,8 @@ class PostgreSQLColumnEncoderRegistry extends ColumnEncoderRegistry {
     classOf[BigDecimal] -> (BigDecimalEncoderDecoder -> ColumnTypes.Numeric),
     classOf[java.math.BigDecimal] -> (BigDecimalEncoderDecoder -> ColumnTypes.Numeric),
 
+    classOf[java.util.UUID] -> (UUIDEncoderDecoder -> ColumnTypes.UUID),
+
     classOf[LocalDate] -> ( DateEncoderDecoder -> ColumnTypes.Date ),
     classOf[LocalDateTime] -> (TimestampEncoderDecoder.Instance -> ColumnTypes.Timestamp),
     classOf[DateTime] -> (TimestampWithTimezoneEncoderDecoder -> ColumnTypes.TimestampWithTimezone),
@@ -64,7 +69,9 @@ class PostgreSQLColumnEncoderRegistry extends ColumnEncoderRegistry {
     classOf[java.sql.Timestamp] -> (TimestampWithTimezoneEncoderDecoder -> ColumnTypes.TimestampWithTimezone),
     classOf[java.util.Calendar] -> (TimestampWithTimezoneEncoderDecoder -> ColumnTypes.TimestampWithTimezone),
     classOf[java.util.GregorianCalendar] -> (TimestampWithTimezoneEncoderDecoder -> ColumnTypes.TimestampWithTimezone),
-    classOf[Array[Byte]] -> ( ByteArrayEncoderDecoder -> ColumnTypes.ByteA )
+    classOf[Array[Byte]] -> ( ByteArrayEncoderDecoder -> ColumnTypes.ByteA ),
+    classOf[ByteBuffer] -> ( ByteArrayEncoderDecoder -> ColumnTypes.ByteA ),
+    classOf[ByteBuf] -> ( ByteArrayEncoderDecoder -> ColumnTypes.ByteA )
   )
 
   private final val classesSequence = (classOf[LocalTime] -> (TimeEncoderDecoder.Instance -> ColumnTypes.Time)) ::
@@ -131,7 +138,7 @@ class PostgreSQLColumnEncoderRegistry extends ColumnEncoderRegistry {
           "NULL"
         } else {
           if (this.shouldQuote(item)) {
-            "\"" + this.encode(item).replaceAllLiterally("\"", """\"""") + "\""
+            "\"" + this.encode(item).replaceAllLiterally("\\", """\\""").replaceAllLiterally("\"", """\"""") + "\""
           } else {
             this.encode(item)
           }

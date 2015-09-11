@@ -14,32 +14,12 @@
  * under the License.
  */
 
-package com.github.mauricio.async.db.mysql.binary
+package com.github.mauricio.async.db.column
 
-import org.specs2.mutable.Specification
-import io.netty.util.CharsetUtil
+import java.util.UUID
 
-class BinaryRowEncoderSpec extends Specification {
+object UUIDEncoderDecoder extends ColumnEncoderDecoder {
 
-  val encoder = new BinaryRowEncoder(CharsetUtil.UTF_8)
-
-  "binary row encoder" should {
-
-    "encode Some(value) like value" in {
-      val actual = encoder.encode(List(Some(1l), Some("foo")))
-      val expected = encoder.encode(List(1l, "foo"))
-
-      actual mustEqual expected
-
-    }
-
-    "encode None as null" in {
-      val actual = encoder.encode(List(None))
-      val expected = encoder.encode(List(null))
-
-      actual mustEqual expected
-    }
-
-  }
+  override def decode(value: String): UUID = UUID.fromString(value)
 
 }
